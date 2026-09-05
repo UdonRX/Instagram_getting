@@ -25,7 +25,7 @@
         <input id="feedTarget" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="@kantei または username" />
         <button id="feedAdd" type="button">登録</button>
       </div>
-      <p class="hint">複数登録OK。端末に保存するのはユーザー名だけ。CDN画像URLは保存せず、更新時に取り直す。</p>
+      <p class="hint">複数登録OK。端末に保存するのはユーザー名だけ。CDN画像URL・動画URLは保存せず、その時点のEmbed HTMLから解決する。</p>
       <div id="feedMessage" class="global-message" aria-live="polite"></div>
     </section>
 
@@ -50,11 +50,13 @@
         <li>抽出結果をそのまま描画せず、共通フィード形式へ正規化してから表示。</li>
         <li>UIは <code>source: instagram</code> のカード表示に限定し、抽出処理と分離。</li>
         <li>複数アカウントの投稿はtimestampで統合・降順ソート。</li>
-        <li>画像URLは期限切れを考慮して永続保存せず、ユーザー名だけlocalStorageへ保存。</li>
-        <li>動画URLが取れない場合はサムネイル＋Instagramで開くfallbackにする。</li>
+        <li>画像URL・動画URLは期限切れを考慮して永続保存せず、ユーザー名だけlocalStorageへ保存。</li>
+        <li>GraphVideo / Reelはshortcodeから個別Embed HTMLを解析してvideo_urlを解決し、成功時はカード内videoプレーヤーで再生。</li>
+        <li>動画URL解決または再生に失敗した場合だけ、従来通りInstagramで開くfallbackへ戻す。</li>
       </ul>
     </section>
   </main>
   <script src="/feed.js" defer></script>
+  <script src="/video-player.js" defer></script>
 </body>
 </html>
