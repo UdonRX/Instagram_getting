@@ -92,27 +92,33 @@
     <section class="panel diagnostic-summary-panel" style="margin-top:14px;">
       <div class="diagnostic-summary-head">
         <div>
-          <p class="eyebrow">iframe HTML internal diagnostic</p>
+          <p class="eyebrow">iframe HTML / graphql_media diagnostic</p>
           <h2 id="frameDiagStatus">まだ診断していません</h2>
         </div>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button id="runFrameDiagnostic" class="ghost" type="button">iframe HTML内部診断</button>
-          <button id="copyFrameDiagnostic" class="ghost" type="button" disabled>iframeログをコピー</button>
+          <button id="runFrameDiagnostic" class="ghost" type="button">graphql_media構造化抽出</button>
+          <button id="copyFrameDiagnostic" class="ghost" type="button" disabled>構造化ログをコピー</button>
         </div>
       </div>
-      <p id="frameDiagExplanation" class="diagnostic-explanation">Profile Embedで実際に読み込まれる /username/embed/ のHTMLそのものに、最新6投稿のURL・shortcode・GraphQLの手掛かりが入っているかを確認します。</p>
+      <p id="frameDiagExplanation" class="diagnostic-explanation">/username/embed/ のHTMLに埋め込まれた graphql_media を一段アンエスケープし、投稿ごとの shortcode / ID / 種類 / 画像 / 動画 / caption / timestamp / carousel children に分解します。</p>
       <div class="diagnostic-metrics">
         <div><span>iframe HTML HTTP</span><strong id="frameMetricHttp">—</strong></div>
         <div><span>HTMLサイズ</span><strong id="frameMetricHtml">—</strong></div>
         <div><span>個別投稿URL</span><strong id="frameMetricLinks">—</strong></div>
         <div><span>shortcode候補</span><strong id="frameMetricShortcodes">—</strong></div>
+        <div><span>graphql_media抽出</span><strong id="frameMetricGraphql">—</strong></div>
+        <div><span>parse method</span><strong id="frameMetricParse">—</strong></div>
       </div>
       <details open style="margin-top:12px;">
+        <summary>graphql_media 構造化抽出結果</summary>
+        <div id="graphqlMediaSummary" class="diagnostic-detail-body">未実行</div>
+      </details>
+      <details>
         <summary>iframe HTML解析結果</summary>
         <div id="frameHtmlSummary" class="diagnostic-detail-body">未実行</div>
       </details>
       <details>
-        <summary>iframe HTML内部診断 生ログ</summary>
+        <summary>iframe HTML / graphql_media 生ログ</summary>
         <pre id="rawFrameDiagnosticLog" class="diagnostic-log">未実行</pre>
       </details>
     </section>
@@ -123,8 +129,9 @@
         <li>oEmbed HTML自体に /p/ や /reel/ が含まれているかを確認できる。</li>
         <li>embed.jsが作成したInstagram iframeのURLと生成タイミングを確認できる。</li>
         <li>親ページで発生したfetch/XHR/Resource TimingとInstagram由来postMessageを確認できる。</li>
-        <li>/username/embed/ の初期HTML内に個別投稿URL・shortcode・GraphQL関連の手掛かりが含まれるかを確認できる。</li>
-        <li>クロスオリジンiframe内部のサブリクエストは、通常のページJavaScriptからはSame-Origin制約により完全には取得できない。HTMLにも手掛かりが無ければ、次段階はブラウザレベルのNetworkトレースになる。</li>
+        <li>/username/embed/ の初期HTMLに埋め込まれた graphql_media を投稿オブジェクトとして構造化できるか確認できる。</li>
+        <li>各投稿について shortcode / media ID / image・video / dimensions / caption / timestamp / carousel children の有無を確認できる。</li>
+        <li>CDNのdisplay_url / video_urlは診断表示だけに使い、長期保存前提にはしない。</li>
       </ul>
     </section>
   </main>
