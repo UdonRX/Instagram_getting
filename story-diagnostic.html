@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="theme-color" content="#0b0b10" />
+  <title>Instagram Story セッション診断</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <style>
+    .story-shell{max-width:760px;margin:0 auto;padding:22px 16px 48px}
+    .story-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+    .story-head h1{margin:.2rem 0 .5rem;font-size:clamp(28px,8vw,46px);line-height:1.02}
+    .story-panel{background:#14141b;border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:16px;margin-top:14px}
+    .story-grid{display:grid;grid-template-columns:1fr;gap:12px}
+    .story-row{display:grid;grid-template-columns:1fr;gap:8px}
+    .story-row input{width:100%;box-sizing:border-box}
+    .story-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .story-status{white-space:pre-wrap;word-break:break-word}
+    .story-status.ok{color:#b9f6ca}.story-status.error{color:#ffb4ab}
+    .story-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .story-summary div{background:#0f0f15;border-radius:14px;padding:12px}
+    .story-summary span{display:block;opacity:.7;font-size:12px}
+    .story-summary strong{display:block;margin-top:4px;font-size:18px}
+    .story-list{display:grid;gap:14px}
+    .story-card{background:#0f0f15;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,.08)}
+    .story-media{background:#050507;display:flex;justify-content:center;align-items:center;min-height:220px}
+    .story-media img,.story-media video{width:100%;max-height:70vh;object-fit:contain;background:#000}
+    .story-meta{padding:12px}
+    .story-meta code{word-break:break-all;font-size:11px}
+    .story-warn{font-size:13px;line-height:1.55;opacity:.82}
+    details pre{overflow:auto;font-size:11px;line-height:1.45;max-height:420px}
+    @media(min-width:640px){.story-row{grid-template-columns:1fr 1fr}.story-summary{grid-template-columns:repeat(4,minmax(0,1fr))}}
+  </style>
+</head>
+<body>
+  <main class="story-shell">
+    <header class="story-head">
+      <div>
+        <p class="eyebrow">Instagram_getting / authenticated story probe</p>
+        <h1>Story<br />セッション診断</h1>
+        <p class="lead">ログイン済みInstagramセッションをVercel側だけに保持し、公開アカウント1件の現在のStory一覧を取得できるか確認します。</p>
+      </div>
+      <a class="ghost" href="/diagnostic">通常診断へ</a>
+    </header>
+
+    <section class="story-panel">
+      <div class="story-row">
+        <label>
+          <span>公開Instagramユーザー名</span>
+          <input id="storyUsername" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="@username" />
+        </label>
+        <label>
+          <span>Story診断キー</span>
+          <input id="storyKey" type="password" autocomplete="off" placeholder="STORY_DIAGNOSTIC_KEY" />
+        </label>
+      </div>
+      <div class="story-actions" style="margin-top:12px">
+        <button id="runStoryDiagnostic" type="button">Story診断を開始</button>
+        <button id="copyStoryDiagnostic" type="button" class="ghost" disabled>JSONをコピー</button>
+      </div>
+      <p class="story-warn">診断キーはこの画面の入力欄だけで使い、localStorage等には保存しません。Instagramのsessionidもブラウザへ送られません。</p>
+      <div id="storyStatus" class="story-status" aria-live="polite">未実行</div>
+    </section>
+
+    <section class="story-panel">
+      <div class="story-summary">
+        <div><span>ユーザーID</span><strong id="storyUserId">—</strong></div>
+        <div><span>現在Story</span><strong id="storyActive">—</strong></div>
+        <div><span>件数</span><strong id="storyCount">—</strong></div>
+        <div><span>取得経路</span><strong id="storySource">—</strong></div>
+      </div>
+    </section>
+
+    <section class="story-panel">
+      <h2>取得したStory</h2>
+      <div id="storyList" class="story-list">
+        <p>診断成功後、画像または動画をここに表示します。</p>
+      </div>
+    </section>
+
+    <section class="story-panel">
+      <details open>
+        <summary>通信診断ログ</summary>
+        <pre id="storyRawLog">未実行</pre>
+      </details>
+    </section>
+  </main>
+  <script src="/story-diagnostic.js" defer></script>
+</body>
+</html>
