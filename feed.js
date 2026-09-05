@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'instagram-getting-feed-accounts-v1';
+const STORY_API_LIMIT = 12;
 const targetEl = document.querySelector('#feedTarget');
 const addEl = document.querySelector('#feedAdd');
 const refreshEl = document.querySelector('#feedRefresh');
@@ -8,12 +9,31 @@ const accountsEl = document.querySelector('#accountPanel');
 const filtersEl = document.querySelector('#feedFilters');
 const statusEl = document.querySelector('#feedStatus');
 const listEl = document.querySelector('#feedList');
+const storyTrayEl = document.querySelector('#storyTray');
+const storyTrayStatusEl = document.querySelector('#storyTrayStatus');
+const storyKeyEl = document.querySelector('#storyKey');
+const storyRefreshEl = document.querySelector('#storyRefresh');
+const storyViewerEl = document.querySelector('#storyViewer');
+const storyProgressEl = document.querySelector('#storyProgress');
+const storyViewerAvatarEl = document.querySelector('#storyViewerAvatar');
+const storyViewerUsernameEl = document.querySelector('#storyViewerUsername');
+const storyViewerTimeEl = document.querySelector('#storyViewerTime');
+const storyViewerMediaEl = document.querySelector('#storyViewerMedia');
+const storyViewerCloseEl = document.querySelector('#storyViewerClose');
+const storyPrevEl = document.querySelector('#storyPrev');
+const storyNextEl = document.querySelector('#storyNext');
+const storyOpenInstagramEl = document.querySelector('#storyOpenInstagram');
 
 let accounts = loadAccounts();
 let accountStates = new Map();
 let feedItems = [];
 let activeFilter = 'all';
 let refreshSeq = 0;
+let storyRefreshSeq = 0;
+let storyAccounts = new Map();
+let storyLastPayload = null;
+let viewerState = { activeAccounts: [], accountIndex: 0, storyIndex: 0, timer: null, video: null };
+let viewerRenderSeq = 0;
 
 function loadAccounts() {
   try {
@@ -227,6 +247,213 @@ async function refreshFeed() {
   renderFeed();
   refreshEl.disabled=false;
 }
+
+function storyFaceHtml(username, state) {
+  const pic = state?.profile?.profilePicUrl;
+  return pic ? `<img src="${escapeHtml(pic)}" alt="@${escapeHtml(username)}">` : escapeHtml(initials(username));
+}
+function renderStoryTray() {
+  storyTrayEl.innerHTML = '';
+  if (!accounts.length) {
+    storyTrayEl.innerHTML = '<span class="story-tray-status">アカウントを登録するとここにStoryが並びます。</span>';
+    storyTrayStatusEl.textContent = 'アカウント未登録';
+    return;
+  }
+  for (const username of accounts) {
+    const state = storyAccounts.get(username);
+    const kind = !state ? 'idle' : state.status !== 'ok' ? 'error' : state.activeStory ? 'active' : 'inactive';
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'story-bubble';
+    button.dataset.state = kind;
+    button.disabled = kind !== 'active';
+    button.title = kind === 'active' ? `@${username} · ${state.storyCount}件` : kind === 'error' ? `${state.error || 'Story取得失敗'}` : `@${username} · Storyなし/未取得`;
+    button.innerHTML = `<span class="story-ring"><span class="story-face">${storyFaceHtml(username,state)}</span></span>${kind==='active'?`<span class="story-count-badge">${state.storyCount}</span>`:''}<span class="story-label">${escapeHtml(username)}</span>`;
+    if (kind === 'active') button.addEventListener('click', () => openStoryViewer(username));
+    storyTrayEl.appendChild(button);
+  }
+}
+async function refreshStories() {
+  const key = storyKeyEl.value;
+  if (!accounts.length) {
+    storyTrayStatusEl.textContent = 'アカウント未登録';
+    renderStoryTray();
+    return;
+  }
+  if (!key) {
+    storyTrayStatusEl.textContent = '診断キーを入力してね';
+    storyKeyEl.focus();
+    return;
+  }
+  const seq = ++storyRefreshSeq;
+  const targets = accounts.slice(0, STORY_API_LIMIT);
+  storyRefreshEl.disabled = true;
+  storyTrayStatusEl.textContent = `${targets.length}件を取得中…`;
+  try {
+    const response = await fetch(`/api/stories-batch?usernames=${encodeURIComponent(targets.join(','))}&t=${Date.now()}`, {
+      method: 'GET',
+      cache: 'no-store',
+      headers: { Accept: 'application/json', 'X-Story-Diagnostic-Key': key }
+    });
+    const text = await response.text();
+    let payload;
+    try { payload = text ? JSON.parse(text) : {}; }
+    catch { payload = { ok:false, error:`JSONではない応答: ${text.slice(0,200)}` }; }
+    if (seq !== storyRefreshSeq) return;
+    storyLastPayload = payload;
+    if (!response.ok || !payload.ok) throw new Error(payload.error || `HTTP ${response.status}`);
+    for (const item of payload.accounts || []) storyAccounts.set(item.username, item);
+    const extra = accounts.length > STORY_API_LIMIT ? ` · 先頭${STORY_API_LIMIT}件` : '';
+    const failed = payload.failedAccountCount ? ` · ${payload.failedAccountCount}件失敗` : '';
+    storyTrayStatusEl.textContent = `${payload.activeAccountCount}/${payload.accountCount} Storyあり${failed}${extra}`;
+    renderStoryTray();
+  } catch (error) {
+    storyTrayStatusEl.textContent = `Story取得失敗: ${error.message}`;
+    console.warn('[Instagram Story batch]', error, storyLastPayload);
+  } finally {
+    if (seq === storyRefreshSeq) storyRefreshEl.disabled = false;
+  }
+}
+
+function activeStoryAccounts() {
+  return accounts.map((username) => storyAccounts.get(username)).filter((entry) => entry?.status === 'ok' && entry.activeStory && Array.isArray(entry.stories) && entry.stories.length);
+}
+function clearViewerPlayback() {
+  viewerRenderSeq += 1;
+  if (viewerState.timer) clearTimeout(viewerState.timer);
+  viewerState.timer = null;
+  if (viewerState.video) {
+    try { viewerState.video.pause(); } catch {}
+    viewerState.video = null;
+  }
+}
+function storyDisplayTime(iso) {
+  if (!iso) return '';
+  const ms = Date.parse(iso);
+  if (!Number.isFinite(ms)) return '';
+  const minutes = Math.floor((Date.now() - ms) / 60000);
+  if (minutes < 1) return 'たった今';
+  if (minutes < 60) return `${minutes}分前`;
+  if (minutes < 1440) return `${Math.floor(minutes/60)}時間前`;
+  return new Intl.DateTimeFormat('ja-JP',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(ms));
+}
+function setViewerAvatar(account) {
+  const pic = account?.profile?.profilePicUrl;
+  storyViewerAvatarEl.innerHTML = pic ? `<img src="${escapeHtml(pic)}" alt="">` : escapeHtml(initials(account?.username));
+}
+function renderProgress(total, current) {
+  storyProgressEl.innerHTML = Array.from({length:total}, (_,index) => `<span class="story-progress-segment"><span class="story-progress-fill" data-index="${index}" style="width:${index<current?'100':'0'}%"></span></span>`).join('');
+  return storyProgressEl.querySelector(`.story-progress-fill[data-index="${current}"]`);
+}
+function currentViewerEntry() {
+  const account = viewerState.activeAccounts[viewerState.accountIndex];
+  const story = account?.stories?.[viewerState.storyIndex];
+  return { account, story };
+}
+function renderStoryViewer() {
+  clearViewerPlayback();
+  const renderSeq = viewerRenderSeq;
+  const { account, story } = currentViewerEntry();
+  if (!account || !story) return closeStoryViewer();
+
+  storyViewerEl.hidden = false;
+  storyViewerEl.setAttribute('aria-hidden','false');
+  document.body.classList.add('story-viewer-open');
+  storyViewerUsernameEl.textContent = `@${account.username}`;
+  storyViewerTimeEl.textContent = storyDisplayTime(story.takenAt);
+  setViewerAvatar(account);
+  const currentFill = renderProgress(account.stories.length, viewerState.storyIndex);
+  storyOpenInstagramEl.href = story.id ? `https://www.instagram.com/stories/${encodeURIComponent(account.username)}/${encodeURIComponent(story.id)}/` : profileUrl(account.username);
+  storyViewerMediaEl.innerHTML = '';
+
+  if (story.type === 'video' && story.videoUrl) {
+    const video = document.createElement('video');
+    video.src = story.videoUrl;
+    video.poster = story.imageUrl || '';
+    video.playsInline = true;
+    video.preload = 'auto';
+    video.autoplay = true;
+    video.muted = false;
+    video.addEventListener('timeupdate', () => {
+      if (renderSeq !== viewerRenderSeq) return;
+      if (!currentFill || !Number.isFinite(video.duration) || video.duration <= 0) return;
+      currentFill.style.width = `${Math.min(100, (video.currentTime/video.duration)*100)}%`;
+    });
+    video.addEventListener('ended', () => { if (renderSeq === viewerRenderSeq) nextStory(); });
+    video.addEventListener('error', () => {
+      if (renderSeq !== viewerRenderSeq) return;
+      storyViewerMediaEl.innerHTML = '<div class="story-viewer-error">動画を読み込めませんでした。Storyを再取得するか、下の「Instagramで開く」を使ってください。</div>';
+    }, { once:true });
+    storyViewerMediaEl.appendChild(video);
+    viewerState.video = video;
+    video.play().catch(() => { video.controls = true; });
+    return;
+  }
+
+  if (story.imageUrl) {
+    const image = document.createElement('img');
+    image.src = story.imageUrl;
+    image.alt = `@${account.username} Story`;
+    image.addEventListener('load', () => {
+      if (renderSeq !== viewerRenderSeq) return;
+      if (currentFill) {
+        currentFill.style.transition = 'width 5s linear';
+        requestAnimationFrame(() => { currentFill.style.width = '100%'; });
+      }
+      viewerState.timer = setTimeout(nextStory, 5000);
+    }, { once:true });
+    image.addEventListener('error', () => {
+      if (renderSeq !== viewerRenderSeq) return;
+      storyViewerMediaEl.innerHTML = '<div class="story-viewer-error">画像を読み込めませんでした。Storyを再取得するか、下の「Instagramで開く」を使ってください。</div>';
+    }, { once:true });
+    storyViewerMediaEl.appendChild(image);
+    return;
+  }
+
+  storyViewerMediaEl.innerHTML = '<div class="story-viewer-error">表示できるStoryメディアURLがありません。</div>';
+}
+function openStoryViewer(username) {
+  const active = activeStoryAccounts();
+  const accountIndex = active.findIndex((entry) => entry.username === username);
+  if (accountIndex < 0) return;
+  viewerState.activeAccounts = active;
+  viewerState.accountIndex = accountIndex;
+  viewerState.storyIndex = 0;
+  renderStoryViewer();
+}
+function nextStory() {
+  const { account } = currentViewerEntry();
+  if (!account) return closeStoryViewer();
+  if (viewerState.storyIndex + 1 < account.stories.length) {
+    viewerState.storyIndex += 1;
+  } else if (viewerState.accountIndex + 1 < viewerState.activeAccounts.length) {
+    viewerState.accountIndex += 1;
+    viewerState.storyIndex = 0;
+  } else {
+    return closeStoryViewer();
+  }
+  renderStoryViewer();
+}
+function prevStory() {
+  if (viewerState.storyIndex > 0) {
+    viewerState.storyIndex -= 1;
+  } else if (viewerState.accountIndex > 0) {
+    viewerState.accountIndex -= 1;
+    const previousAccount = viewerState.activeAccounts[viewerState.accountIndex];
+    viewerState.storyIndex = Math.max(0, previousAccount.stories.length - 1);
+  } else {
+    viewerState.storyIndex = 0;
+  }
+  renderStoryViewer();
+}
+function closeStoryViewer() {
+  clearViewerPlayback();
+  storyViewerEl.hidden = true;
+  storyViewerEl.setAttribute('aria-hidden','true');
+  document.body.classList.remove('story-viewer-open');
+  storyViewerMediaEl.innerHTML = '';
+}
+
 function addAccount() {
   setMessage('');
   try {
@@ -237,6 +464,7 @@ function addAccount() {
     targetEl.value='';
     renderAccounts();
     renderFilters();
+    renderStoryTray();
     refreshFeed();
   } catch (e) { setMessage(e.message); }
 }
@@ -244,9 +472,11 @@ function removeAccount(username) {
   accounts = accounts.filter((x)=>x!==username);
   saveAccounts();
   accountStates.delete(username);
+  storyAccounts.delete(username);
   feedItems=feedItems.filter((x)=>x.account?.username!==username);
   renderAccounts();
   renderFilters();
+  renderStoryTray();
   renderFeed();
   refreshFeed();
 }
@@ -254,7 +484,21 @@ function removeAccount(username) {
 addEl.addEventListener('click', addAccount);
 targetEl.addEventListener('keydown',(e)=>{if(e.key==='Enter')addAccount();});
 refreshEl.addEventListener('click',refreshFeed);
+storyRefreshEl.addEventListener('click',refreshStories);
+storyKeyEl.addEventListener('keydown',(e)=>{if(e.key==='Enter')refreshStories();});
+storyViewerCloseEl.addEventListener('click',closeStoryViewer);
+storyPrevEl.addEventListener('click',prevStory);
+storyNextEl.addEventListener('click',nextStory);
+storyViewerEl.addEventListener('click',(event)=>{if(event.target===storyViewerEl)closeStoryViewer();});
+document.addEventListener('keydown',(event)=>{
+  if (storyViewerEl.hidden) return;
+  if (event.key === 'Escape') closeStoryViewer();
+  else if (event.key === 'ArrowLeft') prevStory();
+  else if (event.key === 'ArrowRight') nextStory();
+});
+
 renderAccounts();
 renderFilters();
+renderStoryTray();
 renderFeed();
 refreshFeed();

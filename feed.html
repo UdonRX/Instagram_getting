@@ -14,7 +14,7 @@
       <div>
         <p class="eyebrow">Instagram_getting / custom feed prototype</p>
         <h1>Instagram<br />独自SNSリスト</h1>
-        <p class="lead">Profile Embedは描画せず、公開プロフィールのgraphql_mediaを共通データへ整形して、投稿単位の縦リストで表示する試作。</p>
+        <p class="lead">公開プロフィールの投稿/Reelsに加え、登録アカウントの現在Storyを上部トレイから確認する試作。</p>
       </div>
       <span class="feed-badge">NO EMBED UI</span>
     </header>
@@ -25,8 +25,24 @@
         <input id="feedTarget" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="@kantei または username" />
         <button id="feedAdd" type="button">登録</button>
       </div>
-      <p class="hint">複数登録OK。端末に保存するのはユーザー名だけ。CDN画像URL・動画URLは保存せず、その時点のEmbed HTMLから解決する。</p>
+      <p class="hint">複数登録OK。端末に保存するのはユーザー名だけ。CDN画像URL・動画URLは保存しない。</p>
       <div id="feedMessage" class="global-message" aria-live="polite"></div>
+    </section>
+
+    <section class="story-tray-panel" aria-labelledby="storyTrayTitle">
+      <div class="story-tray-head">
+        <div>
+          <p class="eyebrow">Stories</p>
+          <h2 id="storyTrayTitle">現在のStory</h2>
+        </div>
+        <span id="storyTrayStatus" class="story-tray-status">未取得</span>
+      </div>
+      <nav id="storyTray" class="story-tray" aria-label="登録アカウントのStory"></nav>
+      <div class="story-auth-row">
+        <input id="storyKey" type="password" autocomplete="off" placeholder="STORY_DIAGNOSTIC_KEY" aria-label="Story診断キー" />
+        <button id="storyRefresh" type="button" class="ghost">Story取得</button>
+      </div>
+      <p class="story-key-note">キーはこのページを開いている間だけメモリに保持し、localStorageには保存しません。Story試作は先頭12アカウントまで。</p>
     </section>
 
     <section class="feed-toolbar">
@@ -34,7 +50,7 @@
       <div class="feed-actions">
         <a class="ghost" href="/">Embed比較</a>
         <a class="ghost" href="/diagnostic.html">診断</a>
-        <button id="feedRefresh" class="ghost" type="button">再取得</button>
+        <button id="feedRefresh" class="ghost" type="button">投稿再取得</button>
       </div>
     </section>
 
@@ -47,15 +63,35 @@
     <section class="panel feed-notes">
       <h2>new-wnt-getting移植を見越した構成</h2>
       <ul>
-        <li>抽出結果をそのまま描画せず、共通フィード形式へ正規化してから表示。</li>
-        <li>UIは <code>source: instagram</code> のカード表示に限定し、抽出処理と分離。</li>
-        <li>複数アカウントの投稿はtimestampで統合・降順ソート。</li>
+        <li>投稿/Reels取得とStory取得をAPI・UIとも分離し、片方の失敗がもう片方へ波及しない。</li>
+        <li>Storyのuser IDは公開Profile Embed HTMLから取得し、解決済みIDを1回のStory APIへまとめる。</li>
+        <li>Storyありはリング付き丸アイコン、Storyなしはグレー表示。取得失敗も個別状態で表示。</li>
+        <li>画像Storyは5秒で自動送り、動画Storyは再生終了で次へ。左右タップでも移動できる。</li>
         <li>画像URL・動画URLは期限切れを考慮して永続保存せず、ユーザー名だけlocalStorageへ保存。</li>
-        <li>GraphVideo / Reelはshortcodeから個別Embed HTMLを解析してvideo_urlを解決し、成功時はカード内videoプレーヤーで再生。</li>
-        <li>動画URL解決または再生に失敗した場合だけ、従来通りInstagramで開くfallbackへ戻す。</li>
       </ul>
     </section>
   </main>
+
+  <div id="storyViewer" class="story-viewer" hidden aria-hidden="true">
+    <div class="story-viewer-frame" role="dialog" aria-modal="true" aria-label="Instagram Story Viewer">
+      <div id="storyProgress" class="story-progress" aria-hidden="true"></div>
+      <header class="story-viewer-head">
+        <div class="story-viewer-user">
+          <div id="storyViewerAvatar" class="story-viewer-avatar"></div>
+          <div>
+            <strong id="storyViewerUsername">@username</strong>
+            <small id="storyViewerTime"></small>
+          </div>
+        </div>
+        <button id="storyViewerClose" class="story-close" type="button" aria-label="Storyを閉じる">×</button>
+      </header>
+      <div id="storyViewerMedia" class="story-viewer-media"></div>
+      <button id="storyPrev" class="story-hit story-hit-prev" type="button" aria-label="前のStory"></button>
+      <button id="storyNext" class="story-hit story-hit-next" type="button" aria-label="次のStory"></button>
+      <a id="storyOpenInstagram" class="story-open-instagram" target="_blank" rel="noopener noreferrer">Instagramで開く ↗</a>
+    </div>
+  </div>
+
   <script src="/feed.js" defer></script>
   <script src="/video-player.js" defer></script>
 </body>
