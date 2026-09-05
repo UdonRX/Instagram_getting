@@ -1,0 +1,252 @@
+.diag-back {
+  display: inline-block;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.diag-progress {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.diag-progress > div {
+  border: 1px solid #292933;
+  border-radius: 14px;
+  padding: 10px;
+  background: #14141b;
+}
+
+.diag-progress span {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #262631;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.diag-progress strong,
+.diag-progress small {
+  display: block;
+}
+
+.diag-progress strong {
+  margin-top: 8px;
+  font-size: 12px;
+}
+
+.diag-progress small {
+  margin-top: 3px;
+  color: #858593;
+  font-size: 10px;
+}
+
+.diag-progress [data-state="running"] {
+  border-color: #7057ff;
+  box-shadow: 0 0 0 2px rgba(112,87,255,.12);
+}
+
+.diag-progress [data-state="done"] {
+  border-color: #2e7d4c;
+}
+
+.diag-progress [data-state="done"] span {
+  background: #21643d;
+}
+
+.diag-progress [data-state="error"] {
+  border-color: #8b3947;
+}
+
+.diagnostic-summary-panel {
+  margin-bottom: 14px;
+}
+
+.diagnostic-summary-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.diagnostic-summary-head h2 {
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+.diagnostic-explanation {
+  margin: 12px 0 0;
+  color: #c0c0ca;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.diagnostic-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.diagnostic-metrics > div {
+  padding: 10px;
+  border: 1px solid #2c2c36;
+  border-radius: 12px;
+  background: #111118;
+}
+
+.diagnostic-metrics span,
+.diagnostic-metrics strong {
+  display: block;
+}
+
+.diagnostic-metrics span {
+  color: #81818f;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.diagnostic-metrics strong {
+  margin-top: 5px;
+  font-size: 15px;
+}
+
+.diagnostic-embed-card {
+  margin-bottom: 14px;
+}
+
+.diagnostic-details h2 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.diagnostic-details details {
+  border-top: 1px solid #2a2a34;
+}
+
+.diagnostic-details details:first-of-type {
+  border-top: 0;
+}
+
+.diagnostic-details summary {
+  padding: 13px 0;
+  cursor: pointer;
+  color: #e2e2e8;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.diagnostic-detail-body {
+  padding: 0 0 14px;
+  color: #bdbdc7;
+  font-size: 12px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.diag-kv {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 10px;
+}
+
+.diag-kv > div {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 8px;
+}
+
+.diag-kv dt {
+  color: #777785;
+}
+
+.diag-kv dd {
+  margin: 0;
+  color: #dddde5;
+  overflow-wrap: anywhere;
+}
+
+.diag-list {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.diag-list li {
+  margin: 8px 0;
+}
+
+.diag-list code,
+.diagnostic-detail-body code {
+  display: block;
+  margin-top: 4px;
+  padding: 7px 8px;
+  border-radius: 8px;
+  background: #0d0d13;
+  color: #aeb7ff;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 10px;
+}
+
+.diag-list pre {
+  max-height: 220px;
+  overflow: auto;
+  padding: 8px;
+  border-radius: 8px;
+  background: #0d0d13;
+  color: #d7d7df;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 10px;
+}
+
+.diag-list small {
+  display: block;
+  margin-top: 4px;
+  color: #777785;
+}
+
+.diag-none {
+  color: #777785;
+}
+
+.diagnostic-log {
+  max-height: 420px;
+  overflow: auto;
+  margin: 0;
+  padding: 12px;
+  border-radius: 12px;
+  background: #09090d;
+  color: #c8c8d2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 10px;
+  line-height: 1.55;
+}
+
+@media (max-width: 620px) {
+  .diag-progress {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .diagnostic-metrics {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .diagnostic-summary-head {
+    display: block;
+  }
+
+  .diagnostic-summary-head .ghost {
+    margin-top: 12px;
+  }
+
+  .diag-kv > div {
+    grid-template-columns: 100px 1fr;
+  }
+}

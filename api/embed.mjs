@@ -2,6 +2,7 @@ const ALLOWED_HOSTS = new Set(['instagram.com', 'www.instagram.com']);
 const RESERVED_PROFILE_PATHS = new Set([
   'accounts', 'about', 'developer', 'explore', 'directory', 'legal', 'privacy', 'terms'
 ]);
+const POST_LINK_RE = /https?:\/\/(?:www\.)?instagram\.com\/(?:p|reel)\/[A-Za-z0-9_-]+\/?/gi;
 
 function normalizeTarget(raw) {
   const input = String(raw || '').trim();
@@ -43,6 +44,11 @@ function stripScripts(html) {
   return String(html || '').replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, '').trim();
 }
 
+function extractPostLinks(value) {
+  const matches = String(value || '').match(POST_LINK_RE) || [];
+  return [...new Set(matches.map((item) => item.replace(/\?.*$/, '')))].slice(0, 50);
+}
+
 export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json; charset=utf-8');
   res.setHeader('Cache-Control', 'no-store');
@@ -70,7 +76,7 @@ export default async function handler(req, res) {
       method: 'GET',
       headers: {
         Accept: 'application/json',
-        'User-Agent': 'InstagramGettingPrototype/1.0'
+        'User-Agent': 'InstagramGettingPrototype/1.1'
       },
       signal: AbortSignal.timeout(10000)
     });
@@ -110,7 +116,12 @@ export default async function handler(req, res) {
       authorName: payload.author_name || null,
       authorUrl: payload.author_url || null,
       title: payload.title || null,
-      html
+      html,
+      debug: {
+        payloadKeys: Object.keys(payload).sort(),
+        htmlLength: html.length,
+        postLinksInHtml: extractPostLinks(html)
+      }
     });
   } catch (error) {
     const timedOut = error?.name === 'TimeoutError' || error?.name === 'AbortError';
