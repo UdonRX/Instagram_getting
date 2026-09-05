@@ -30,9 +30,18 @@
 
     <section class="panel diagnostic-entry" style="margin-top:14px">
       <div>
-        <p class="eyebrow">NEW / diagnostic</p>
+        <p class="eyebrow">NEW / custom feed</p>
+        <h2 style="margin:0;font-size:15px">graphql_mediaの6投稿を独自縦リストで見る</h2>
+        <p class="small">Profile EmbedのタイルUIは使わず、複数アカウントの投稿を共通データへ整形して時系列で混在表示する。</p>
+      </div>
+      <a class="ghost" style="display:inline-block;margin-top:12px;text-decoration:none" href="/feed.html">独自SNSリストを開く</a>
+    </section>
+
+    <section class="panel diagnostic-entry" style="margin-top:14px">
+      <div>
+        <p class="eyebrow">diagnostic</p>
         <h2 style="margin:0;font-size:15px">Profile Embedの6投稿がどの通信から来るか調べる</h2>
-        <p class="small">oEmbed → embed.js → iframe → Resource/postMessage の順に観測し、個別 /p/ /reel/ URLが初めて現れる場所を診断する。</p>
+        <p class="small">oEmbed → embed.js → iframe → Resource/postMessage と、iframe HTML内部のgraphql_mediaを診断する。</p>
       </div>
       <a class="ghost" style="display:inline-block;margin-top:12px;text-decoration:none" href="/diagnostic.html">通信診断を開く</a>
     </section>
@@ -55,10 +64,11 @@
       <ul>
         <li>Personalを含む公開プロフィールURLがMeta公式Embedで描画できるか</li>
         <li>プロフィールEmbed内に最近の投稿・Reelsが実用的な形で見えるか</li>
+        <li>graphql_mediaの6件をEmbedなしの独自SNSカードへ変換できるか</li>
         <li>iPhone Safari / PWA相当の縦画面で崩れないか</li>
         <li>新着反映時に「再取得」で更新できるか</li>
       </ul>
-      <p class="small">この版はMeta Graph APIのBusiness Discoveryをまだ使わない。まずPersonal中心の公式Profile Embedが実用になるかだけを切り分けて検証する。</p>
+      <p class="small">独自リスト版はnew-wnt-gettingへの移植を見越し、抽出データを共通フィード形式へ正規化してから表示する。</p>
     </section>
   </main>
 
